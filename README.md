@@ -11,8 +11,10 @@ Basic usage:
 
 1. Start the backend on your server:
 
+    ```text
    uvicorn main:app --host <server-ip> --port 8000
-
+    ```
+    
 2. Open the frontend in a browser at:
 
    http://<server-ip>:8000
