@@ -14,10 +14,12 @@ Basic usage:
     ```text
    uvicorn main:app --host <server-ip> --port 8000
     ```
-    
+
 2. Open the frontend in a browser at:
 
+    ```text
    http://<server-ip>:8000
+    ```
 
 3. Register a user, log in, select or create a channel, then send messages and upload/download files.
 
