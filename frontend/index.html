@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Discord-lite Client</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #1e1f22;
+      color: #f5f5f5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 8px 12px;
+      background: #2b2d31;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+    header input {
+      background: #1e1f22;
+      border: 1px solid #3a3c40;
+      border-radius: 4px;
+      color: #f5f5f5;
+      padding: 4px 6px;
+      font-size: 13px;
+    }
+    header button {
+      background: #5865f2;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    header button:hover {
+      background: #4752c4;
+    }
+    main {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+    }
+    #sidebar {
+      width: 240px;
+      background: #2b2d31;
+      border-right: 1px solid #202225;
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+      gap: 8px;
+      font-size: 14px;
+    }
+    #sidebar h2 {
+      font-size: 14px;
+      margin: 0 0 4px;
+      text-transform: uppercase;
+      color: #949ba4;
+    }
+    #channels {
+      flex: 1;
+      overflow-y: auto;
+      border-radius: 4px;
+      background: #1e1f22;
+    }
+    .channel {
+      padding: 6px 8px;
+      cursor: pointer;
+    }
+    .channel:hover {
+      background: #35373c;
+    }
+    .channel.active {
+      background: #404249;
+    }
+    #create-join {
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    #create-join input {
+      width: 100%;
+    }
+    #content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    #channel-header {
+      padding: 8px 12px;
+      background: #2b2d31;
+      border-bottom: 1px solid #202225;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 14px;
+    }
+    #messages {
+      flex: 1;
+      padding: 10px 12px;
+      overflow-y: auto;
+      font-size: 14px;
+    }
+    .message {
+      margin-bottom: 6px;
+    }
+    .message .meta {
+      color: #949ba4;
+      font-size: 12px;
+    }
+    .message .content {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .message.file .content button {
+      background: none;
+      border: none;
+      color: #00aff4;
+      cursor: pointer;
+      padding: 0;
+      font: inherit;
+    }
+    .message.file .content button:hover {
+      text-decoration: underline;
+    }
+    #input-area {
+      padding: 8px 12px;
+      border-top: 1px solid #202225;
+      background: #313338;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    #input-row {
+      display: flex;
+      gap: 6px;
+    }
+    #messageInput {
+      flex: 1;
+      border-radius: 4px;
+      border: 1px solid #202225;
+      background: #383a40;
+      color: #f5f5f5;
+      padding: 6px 8px;
+      font-size: 14px;
+    }
+    #input-row button {
+      background: #5865f2;
+      border: none;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    #input-row button:hover {
+      background: #4752c4;
+    }
+    #file-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+    #file-row input[type="file"] {
+      font-size: 12px;
+    }
+    #status {
+      font-size: 12px;
+      color: #949ba4;
+    }
+    #auth-info {
+      margin-left: auto;
+      font-size: 13px;
+      color: #b5bac1;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <span>API:</span>
+  <input id="apiBase" type="text" size="28" />
+  <span>Username:</span>
+  <input id="username" type="text" size="12" />
+  <span>Password:</span>
+  <input id="password" type="password" size="12" />
+  <button id="btnRegister">Register</button>
+  <button id="btnLogin">Login</button>
+  <span id="auth-info"></span>
+</header>
+
+<main>
+  <aside id="sidebar">
+    <div>
+      <h2>Channels</h2>
+      <div id="channels"></div>
+    </div>
+    <div id="create-join">
+      <h2>Manage</h2>
+      <input id="newChannelName" type="text" placeholder="New channel name" />
+      <button id="btnCreateChannel">Create Channel</button>
+      <input id="joinChannelId" type="number" placeholder="Join by ID" />
+      <button id="btnJoinChannel">Join Channel</button>
+    </div>
+  </aside>
+
+  <section id="content">
+    <div id="channel-header">
+      <div id="channel-title">No channel selected</div>
+      <div id="status">Not connected</div>
+    </div>
+    <div id="messages"></div>
+    <div id="input-area">
+      <div id="input-row">
+        <input id="messageInput" type="text" placeholder="Type a message..." />
+        <button id="btnSend">Send</button>
+      </div>
+      <div id="file-row">
+        <input id="fileInput" type="file" />
+        <button id="btnUpload">Upload File</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+  const state = {
+    token: null,
+    user: null,
+    channels: [],
+    currentChannelId: null,
+    ws: null,
+  };
+
+  function apiBase() {
+    const val = document.getElementById("apiBase").value.trim();
+    if (val) return val.replace(/\/+$/, "");
+    return window.location.origin.replace(/\/+$/, "");
+  }
+
+  function wsBase() {
+    return apiBase().replace(/^http/, "ws");
+  }
+
+  async function api(path, options = {}) {
+    const headers = options.headers || {};
+    const hasFormData = options.body instanceof FormData;
+
+    if (!hasFormData && options.body && typeof options.body !== "string") {
+      headers["Content-Type"] = "application/json";
+      options.body = JSON.stringify(options.body);
+    }
+
+    if (state.token && !options.noAuth) {
+      headers["Authorization"] = "Bearer " + state.token;
+    }
+
+    const res = await fetch(apiBase() + path, {
+      ...options,
+      headers,
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(res.status + " " + text);
+    }
+
+    const ct = res.headers.get("content-type") || "";
+    if (ct.includes("application/json")) {
+      return res.json();
+    }
+    return res.text();
+  }
+
+  function setStatus(text) {
+    document.getElementById("status").textContent = text;
+  }
+
+  function setAuthInfo() {
+    const el = document.getElementById("auth-info");
+    if (state.user) {
+      el.innerHTML = `Logged in as <strong>${state.user.username}</strong>`;
+    } else {
+      el.textContent = "";
+    }
+  }
+
+  async function register() {
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+    if (!username || !password) {
+      alert("Enter username and password.");
+      return;
+    }
+    try {
+      await api("/auth/register", {
+        method: "POST",
+        body: { username, password },
+        noAuth: true,
+      });
+      alert("Registered! Now logging in.");
+      await login();
+    } catch (err) {
+      console.error(err);
+      alert("Registration failed: " + err.message);
+    }
+  }
+
+  async function login() {
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+    if (!username || !password) {
+      alert("Enter username and password.");
+      return;
+    }
+    try {
+      const data = await api("/auth/login", {
+        method: "POST",
+        body: { username, password },
+        noAuth: true,
+      });
+      state.token = data.access_token;
+      const me = await api("/me");
+      state.user = me;
+      setAuthInfo();
+      await loadChannels();
+      setStatus("Logged in, no channel selected");
+    } catch (err) {
+      console.error(err);
+      alert("Login failed: " + err.message);
+    }
+  }
+
+  async function loadChannels() {
+    try {
+      const channels = await api("/channels");
+      state.channels = channels;
+      renderChannels();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to load channels: " + err.message);
+    }
+  }
+
+  function renderChannels() {
+    const container = document.getElementById("channels");
+    container.innerHTML = "";
+    if (!state.channels.length) {
+      const div = document.createElement("div");
+      div.style.padding = "6px 8px";
+      div.style.color = "#949ba4";
+      div.textContent = "No channels yet.";
+      container.appendChild(div);
+      return;
+    }
+    state.channels.forEach((ch) => {
+      const div = document.createElement("div");
+      div.className = "channel" + (ch.id === state.currentChannelId ? " active" : "");
+      div.textContent = `# ${ch.name} (ID: ${ch.id})`;
+      div.onclick = () => selectChannel(ch.id);
+      container.appendChild(div);
+    });
+  }
+
+  async function createChannel() {
+    const name = document.getElementById("newChannelName").value.trim();
+    if (!name) {
+      alert("Enter a channel name.");
+      return;
+    }
+    try {
+      const ch = await api("/channels", {
+        method: "POST",
+        body: { name },
+      });
+      state.channels.push(ch);
+      renderChannels();
+      document.getElementById("newChannelName").value = "";
+    } catch (err) {
+      console.error(err);
+      alert("Failed to create channel: " + err.message);
+    }
+  }
+
+  async function joinChannel() {
+    const idStr = document.getElementById("joinChannelId").value.trim();
+    const id = parseInt(idStr, 10);
+    if (!idStr || isNaN(id)) {
+      alert("Enter a valid channel ID.");
+      return;
+    }
+    try {
+      const ch = await api(`/channels/${id}/join`, { method: "POST" });
+      if (!state.channels.find((c) => c.id === ch.id)) {
+        state.channels.push(ch);
+      }
+      renderChannels();
+      document.getElementById("joinChannelId").value = "";
+    } catch (err) {
+      console.error(err);
+      alert("Failed to join channel: " + err.message);
+    }
+  }
+
+  async function selectChannel(channelId) {
+    state.currentChannelId = channelId;
+    renderChannels();
+    document.getElementById("channel-title").textContent = `Channel #${channelId}`;
+    document.getElementById("messages").innerHTML = "";
+    await connectWebSocket();
+    await loadMessages(channelId);
+  }
+
+  async function loadMessages(channelId) {
+    try {
+      const msgs = await api(`/channels/${channelId}/messages?limit=50`);
+      const container = document.getElementById("messages");
+      container.innerHTML = "";
+      msgs.forEach((m) => appendMessage(m, m.type || "message"));
+      container.scrollTop = container.scrollHeight;
+    } catch (err) {
+      console.error(err);
+      alert("Failed to load messages: " + err.message);
+    }
+  }
+
+  async function connectWebSocket() {
+    if (!state.token || !state.currentChannelId) return;
+
+    if (state.ws) {
+      state.ws.close();
+      state.ws = null;
+    }
+
+    const url = `${wsBase()}/ws/channels/${state.currentChannelId}?token=${encodeURIComponent(
+      state.token
+    )}`;
+    const ws = new WebSocket(url);
+    state.ws = ws;
+
+    ws.onopen = () => {
+      setStatus(`Connected to channel ${state.currentChannelId}`);
+    };
+
+    ws.onclose = () => {
+      setStatus("WebSocket disconnected");
+    };
+
+    ws.onerror = (e) => {
+      console.error("WebSocket error:", e);
+      setStatus("WebSocket error");
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        const type = data.type || "message";
+        appendMessage(data, type);
+      } catch (err) {
+        console.error("Failed to parse WS message:", err, event.data);
+      }
+    };
+  }
+
+  function appendMessage(data, type) {
+    const container = document.getElementById("messages");
+    const div = document.createElement("div");
+    div.className = "message" + (type === "file" ? " file" : "");
+
+    const user = data.user || {};
+    const username = user.username || `User ${user.id || "?"}`;
+    const ts = data.created_at
+      ? new Date(data.created_at).toLocaleTimeString()
+      : new Date().toLocaleTimeString();
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    meta.textContent = `${username} • ${ts}`;
+    div.appendChild(meta);
+
+    const content = document.createElement("div");
+    content.className = "content";
+
+    if (type === "file") {
+      const btn = document.createElement("button");
+      btn.textContent = `📎 ${data.original_filename} (${Math.round(
+        (data.size_bytes || 0) / 1024
+      )} KB)`;
+      btn.onclick = () => downloadFile(data.id, data.original_filename);
+      content.appendChild(btn);
+    } else {
+      content.textContent = data.content || "";
+    }
+
+    div.appendChild(content);
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function sendMessage() {
+    const input = document.getElementById("messageInput");
+    const text = input.value.trim();
+    if (!text || !state.ws || state.ws.readyState !== WebSocket.OPEN) return;
+    state.ws.send(text);
+    input.value = "";
+  }
+
+  async function uploadFile() {
+    if (!state.currentChannelId) {
+      alert("Select a channel first.");
+      return;
+    }
+    const input = document.getElementById("fileInput");
+    const file = input.files[0];
+    if (!file) {
+      alert("Choose a file first.");
+      return;
+    }
+
+    const form = new FormData();
+    form.append("upload", file);
+
+    try {
+      await api(`/channels/${state.currentChannelId}/files`, {
+        method: "POST",
+        body: form,
+      });
+      input.value = "";
+    } catch (err) {
+      console.error(err);
+      alert("File upload failed: " + err.message);
+    }
+  }
+
+  async function downloadFile(fileId, filename) {
+    if (!state.token) {
+      alert("You must be logged in to download files.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${apiBase()}/files/${fileId}`, {
+        headers: {
+          "Authorization": "Bearer " + state.token,
+        },
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(res.status + " " + text);
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename || `file-${fileId}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert("Download failed: " + err.message);
+    }
+  }
+
+  // Wire up events
+  document.getElementById("btnRegister").onclick = register;
+  document.getElementById("btnLogin").onclick = login;
+  document.getElementById("btnCreateChannel").onclick = createChannel;
+  document.getElementById("btnJoinChannel").onclick = joinChannel;
+  document.getElementById("btnSend").onclick = sendMessage;
+  document.getElementById("btnUpload").onclick = uploadFile;
+  document.getElementById("messageInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  // Default the API box to this server
+  document.getElementById("apiBase").value = window.location.origin;
+</script>
+</body>
+</html>
+
